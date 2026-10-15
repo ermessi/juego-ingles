@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>English Quest – Module 1: Time Out</title>
+<style>
+:root{
+  --bg:#f4f6fb; --card:#ffffff; --text:#1d2433; --muted:#667085; --border:#dfe4ee;
+  --primary:#3b6df0; --primary-text:#ffffff; --ok:#1f9d55; --ok-bg:#e3f6ea;
+  --bad:#d6403a; --bad-bg:#fde8e7; --warn-bg:#fff6dc;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#12151c; --card:#1b202b; --text:#eef1f7; --muted:#98a2b3; --border:#2c3342;
+    --primary:#6b93ff; --primary-text:#0b1020; --ok:#4cd68a; --ok-bg:#12301f;
+    --bad:#ff7a73; --bad-bg:#3a1a19; --warn-bg:#352d12;
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;justify-content:center;padding:20px 14px}
+#app{width:100%;max-width:620px}
+h1{font-size:1.7rem;margin:6px 0 4px}
+h2{font-size:1.3rem;margin:6px 0 14px;line-height:1.4}
+.sub{color:var(--muted);margin:0 0 20px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:14px}
+.hud{display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:space-between;color:var(--muted);font-size:.92rem;margin-bottom:12px}
+.hud b{color:var(--text)}
+.tag{display:inline-block;font-size:.75rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--primary);margin:0}
+button{font:inherit;cursor:pointer;border-radius:12px;border:1px solid var(--border);background:var(--card);color:var(--text);padding:12px 16px;text-align:left;width:100%;margin-bottom:10px;transition:transform .05s}
+button:active{transform:scale(.98)}
+button.primary{background:var(--primary);color:var(--primary-text);border-color:var(--primary);text-align:center;font-weight:600}
+button:disabled{cursor:default;opacity:1}
+button.correct{background:var(--ok-bg);border-color:var(--ok);color:var(--text)}
+button.wrong{background:var(--bad-bg);border-color:var(--bad);color:var(--text)}
+button.mode b{display:block;font-size:1.05rem;margin-bottom:2px}
+button.mode span{color:var(--muted);font-size:.9rem}
+input[type=text]{font:inherit;width:100%;padding:12px 14px;border-radius:12px;border:2px solid var(--border);background:var(--bg);color:var(--text);margin-bottom:10px}
+input[type=text]:focus{outline:none;border-color:var(--primary)}
+.blank{display:inline-block;min-width:60px;border-bottom:3px solid var(--primary);margin:0 4px}
+.fb{border-radius:12px;padding:14px 16px;margin-bottom:12px}
+.fb.ok{background:var(--ok-bg)} .fb.bad{background:var(--bad-bg)}
+.fb p{margin:4px 0}
+.tip{background:var(--warn-bg);border-radius:10px;padding:8px 12px;margin-top:8px;font-size:.93rem}
+.hearts{letter-spacing:2px}
+.big{font-size:2.6rem;font-weight:700;margin:4px 0}
+ul.review{padding-left:18px;margin:8px 0}
+ul.review li{margin-bottom:8px}
+.muted{color:var(--muted)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ===================== DATOS ===================== */
+// [inglés, español, categoría]
+const VOCAB = [
+  // Films
+  ["setting","ambientación / escenario","Films"],["hero","héroe","Films"],["heroine","heroína","Films"],
+  ["special effects","efectos especiales","Films"],["costume designer","diseñador de vestuario","Films"],
+  ["make-up artist","maquillador","Films"],["lead role","papel principal","Films"],
+  ["supporting actor","actor secundario","Films"],["characters","personajes","Films"],["scenes","escenas","Films"],
+  ["soundtrack","banda sonora","Films"],["trailer","tráiler / avance","Films"],["audiences","público","Films"],
+  ["viewers","espectadores","Films"],["director","director","Films"],["plot","argumento / trama","Films"],
+  // Music
+  ["live concerts","conciertos en directo","Music"],["performances","actuaciones","Music"],
+  ["orchestras","orquestas","Music"],["bands","grupos de música","Music"],["stage","escenario (de teatro)","Music"],
+  ["perform","actuar / interpretar","Music"],["performers","artistas / intérpretes","Music"],
+  ["guitar","guitarra","Music"],["clarinet","clarinete","Music"],["violin","violín","Music"],
+  ["cello","violonchelo","Music"],["drums","batería","Music"],["flute","flauta","Music"],
+  ["trumpet","trompeta","Music"],["recording","grabación","Music"],["video clip","videoclip","Music"],
+  ["lyrics","letra de una canción","Music"],["tempo","ritmo / tempo","Music"],["tune","melodía","Music"],
+  ["songwriters","compositores de canciones","Music"],
+  // Literature
+  ["disgusting","asqueroso","Literature"],["amusing","divertido / entretenido","Literature"],
+  ["fairy tale","cuento de hadas","Literature"],["incredible","increíble","Literature"],
+  ["poetry","poesía","Literature"],["thrilling","emocionante / apasionante","Literature"],
+  ["myths","mitos","Literature"],["legends","leyendas","Literature"],["suitable","adecuado","Literature"],
+  ["ordinary","normal / corriente","Literature"],["ancient","antiguo","Literature"],["giant","gigante","Literature"],
+  ["imaginary","imaginario","Literature"],["journal","diario","Literature"],["poems","poemas","Literature"],
+  ["awful","horrible","Literature"],["poet","poeta","Literature"],["unimportant","sin importancia","Literature"],
+  ["fiction","ficción","Literature"],["biography","biografía","Literature"],
+  ["mystery","misterio / novela de misterio","Literature"],["textbook","libro de texto","Literature"],
+  ["cookbook","libro de cocina","Literature"]
+];
+
+const T_PS  = "Present Simple: hábitos, rutinas y hechos de una historia.";
+const T_PC  = "Present Continuous (am/is/are + -ing): acción que ocurre ahora mismo.";
+const T_PA  = "Past Simple: acción completada en el pasado.";
+const T_PCO = "Past Continuous (was/were + -ing): acción en progreso en el pasado.";
+const T_UT  = "used to: hábito del pasado que ya no existe. En negativa y pregunta se escribe use to.";
+const T_PSP = "Present Simple Passive: am/is/are + participio.";
+const T_PAP = "Past Simple Passive: was/were + participio.";
+
+// [frase, [respuestas válidas], explicación]
+const GRAM = [
+  ["In the film, Peter Parker frequently ___ (become) Spider-Man.",["becomes"],T_PS],
+  ["Spider-Man ___ (rescue) Mary Jane.",["rescues"],T_PS],
+  ["John and Kate ___ (sit) in the cinema every evening.",["sit"],T_PS],
+  ["The fantasy film club ___ (have) monthly meetings.",["has"],T_PS],
+  ["We ___ (listen) to the soundtrack at the moment.",["are listening"],T_PC],
+  ["She ___ (not / watch) TV right now.",["isn't watching","is not watching"],T_PC],
+  ["I ___ (understand) the film's message now.",["understand"],"'understand' es un verbo estativo: no se usa en continuous."],
+  ["I ___ (love) the songs in this film.",["love"],"'love' es un verbo estativo: Present Simple."],
+  ["I ___ (study) violin two years ago.",["studied"],T_PA],
+  ["He ___ (not / like) the festival last week.",["didn't like","did not like"],T_PA],
+  ["Where did they ___ (make) the video clip?",["make"],"Después de did/didn't el verbo va en forma base."],
+  ["I ___ (write) this piece of music last year.",["wrote"],T_PA+" 'write' es irregular: wrote."],
+  ["She ___ (listen) to music at 10.00 last night.",["was listening"],T_PCO],
+  ["I ___ (not / dance) at midnight.",["wasn't dancing","was not dancing"],T_PCO],
+  ["___ you playing the trumpet a minute ago?",["were"],"Pregunta en Past Continuous: Were + you/we/they."],
+  ["I was singing a song ___ he was playing the drums.",["while"],"while + acción larga (Past Continuous)."],
+  ["It was raining ___ we arrived at the festival.",["when"],"when + acción corta (Past Simple) que interrumpe."],
+  ["It was raining when we ___ (arrive) at the festival.",["arrived"],"La acción corta que interrumpe va en Past Simple."],
+  ["You ___ (call) while we were watching the video clip.",["called"],"La acción corta que interrumpe va en Past Simple."],
+  ["You ___ play the guitar when you were little. (hábito pasado)",["used to"],T_UT],
+  ["He didn't ___ like classical music.",["use to"],T_UT],
+  ["Where did the festival ___ take place?",["use to"],T_UT],
+  ["The mouse ___ (take) on a journey.",["is taken"],T_PSP],
+  ["The stories ___ (not / tell) in simple language.",["aren't told","are not told"],T_PSP],
+  ["___ these books recommended?",["are"],"Pregunta pasiva plural: Are + sujeto + participio."],
+  ["Many songs ___ (sing) at the festival every year.",["are sung"],T_PSP],
+  ["These poems ___ (write) 100 years ago by a teenager.",["were written"],T_PAP],
+  ["The library ___ (not / build) quickly.",["wasn't built","was not built"],T_PAP],
+  ["When ___ Claire's journal stolen?",["was"],"Pregunta pasiva singular en pasado: Was + sujeto + participio."],
+  ["The journal ___ (steal) by Tom Smith.",["was stolen"],T_PAP],
+  ["This poem was written ___ Shakespeare.",["by"],"Para decir quién hace la acción en la pasiva usamos by."]
+];
+
+/* ===================== AJUSTES Y ESTADO ===================== */
+const LIVES = 3, TOTAL_Q = 15;
+const app = document.getElementById("app");
+let G = null; // estado de la partida
+
+/* ===================== UTILIDADES ===================== */
+function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+function norm(s){ return s.toLowerCase().replace(/[\u2019`´]/g,"'").trim().replace(/\s+/g," "); }
+function getRecord(){ try{ return parseInt(localStorage.getItem("eq_record")||"0",10); }catch(e){ return 0; } }
+function setRecord(v){ try{ localStorage.setItem("eq_record",String(v)); }catch(e){} }
+function esc(s){ return s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function draw(pool, source){ if(!pool.length) shuffle(source.slice()).forEach(x=>pool.push(x)); return pool.pop(); }
+
+/* ===================== PANTALLAS ===================== */
+function showMenu(){
+  app.innerHTML = `
+    <h1>🎬 English Quest</h1>
+    <p class="sub">Module 1: Time Out · Vocabulario y gramática · Récord: <b>${getRecord()}</b></p>
+    <button class="mode" data-m="vocab"><b>📚 Solo vocabulario</b><span>Películas, música y literatura</span></button>
+    <button class="mode" data-m="gram"><b>✍️ Solo gramática</b><span>Presentes, pasados, used to y pasiva</span></button>
+    <button class="mode" data-m="mix"><b>🎯 Modo mixto</b><span>Las dos cosas a la vez</span></button>
+    <p class="muted">${TOTAL_Q} preguntas · ${LIVES} vidas · las rachas dan puntos extra</p>`;
+  app.querySelectorAll("button.mode").forEach(b=>b.onclick=()=>startGame(b.dataset.m));
+}
+
+function startGame(mode){
+  G = { mode, lives:LIVES, score:0, streak:0, n:0, errors:[], vPool:[], gPool:[] };
+  nextQuestion();
+}
+
+function hud(){
+  return `<div class="hud">
+    <span>Pregunta <b>${G.n}/${TOTAL_Q}</b></span>
+    <span>Puntos <b>${G.score}</b></span>
+    <span>Racha <b>${G.streak}</b></span>
+    <span class="hearts">${"❤️".repeat(G.lives)}${"🖤".repeat(LIVES-G.lives)}</span></div>`;
+}
+
+function nextQuestion(){
+  if(G.n >= TOTAL_Q || G.lives <= 0){ return endGame(); }
+  G.n++;
+  const type = G.mode==="mix" ? (Math.random()<0.5?"vocab":"gram") : G.mode;
+  if(type==="vocab") renderVocab(); else renderGram();
+}
+
+function renderVocab(){
+  const [en,es,cat] = draw(G.vPool, VOCAB);
+  const toSpanish = Math.random()<0.5;
+  const others = shuffle(VOCAB.filter(v=>v[0]!==en)).slice(0,3);
+  const correct = toSpanish ? es : en;
+  const options = shuffle([correct, ...others.map(o=>toSpanish?o[1]:o[0])]);
+  const q = toSpanish ? `¿Qué significa <i>${esc(en)}</i>?` : `¿Cómo se dice en inglés <i>${esc(es)}</i>?`;
+  app.innerHTML = hud() + `<div class="card"><p class="tag">Vocabulario · ${cat}</p><h2>${q}</h2><div id="opts"></div></div><div id="fb"></div>`;
+  const box = document.getElementById("opts");
+  options.forEach(o=>{
+    const b=document.createElement("button"); b.textContent=o;
+    b.onclick=()=>{
+      box.querySelectorAll("button").forEach(x=>{ x.disabled=true; if(x.textContent===correct) x.classList.add("correct"); });
+      const ok = o===correct; if(!ok) b.classList.add("wrong");
+      feedback(ok, correct, "", `${en} = ${es}`, "vocab");
+    };
+    box.appendChild(b);
+  });
+}
+
+function renderGram(){
+  const [sentence, answers, tip] = draw(G.gPool, GRAM);
+  const shown = esc(sentence).replace("___", '<span class="blank">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>');
+  app.innerHTML = hud() + `<div class="card"><p class="tag">Gramática</p><h2>${shown}</h2>
+    <input type="text" id="inp" placeholder="Escribe la respuesta…" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <button class="primary" id="chk">Comprobar</button></div><div id="fb"></div>`;
+  const inp = document.getElementById("inp"), chk = document.getElementById("chk");
+  inp.focus();
+  const check = ()=>{
+    if(!inp.value.trim()) return;
+    inp.disabled = true; chk.style.display="none";
+    const ok = answers.map(norm).includes(norm(inp.value));
+    feedback(ok, answers[0], tip, sentence.replace("___", answers[0]), "gram");
+  };
+  chk.onclick = check;
+  inp.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); check(); } });
+}
+
+function feedback(ok, correct, tip, full, type){
+  if(ok){
+    G.streak++;
+    const pts = 10 + Math.min(G.streak-1,5)*2;
+    G.score += pts;
+  } else {
+    G.streak = 0; G.lives--;
+    G.errors.push({type, text:full, tip});
+  }
+  const lastQ = G.n>=TOTAL_Q || G.lives<=0;
+  const fb = document.getElementById("fb");
+  fb.innerHTML = `<div class="fb ${ok?"ok":"bad"}">
+      <p><b>${ok?"✅ ¡Correcto!":"❌ Incorrecto"}</b></p>
+      ${ok?"":`<p>Respuesta correcta: <b>${esc(correct)}</b></p>`}
+      ${(!ok && tip)?`<div class="tip">💡 ${esc(tip)}</div>`:""}
+    </div><button class="primary" id="next">${lastQ?"Ver resultados":"Siguiente →"}</button>`;
+  const next = document.getElementById("next");
+  next.onclick = nextQuestion;
+  next.focus();
+  // actualizar marcador sin repintar la pregunta
+  const h = app.querySelector(".hud");
+  if(h) h.outerHTML = hud();
+}
+
+function endGame(){
+  const rec = getRecord(), isRecord = G.score > rec;
+  if(isRecord) setRecord(G.score);
+  const review = G.errors.length
+    ? `<ul class="review">${G.errors.map(e=>`<li><b>${esc(e.text)}</b>${e.tip?`<br><span class="muted">${esc(e.tip)}</span>`:""}</li>`).join("")}</ul>`
+    : `<p>🏆 ¡Partida perfecta, sin errores!</p>`;
+  app.innerHTML = `
+    <h1>${G.lives<=0?"💔 Te quedaste sin vidas":"🎉 ¡Partida completada!"}</h1>
+    <div class="card"><div class="muted">Tu puntuación</div><div class="big">${G.score}</div>
+      <p>${isRecord?"🥇 ¡Nuevo récord!":"Récord: <b>"+rec+"</b>"}</p></div>
+    <div class="card"><p class="tag">Para repasar</p>${review}</div>
+    <button class="primary" id="again">Jugar otra vez</button>
+    <button id="menu" style="text-align:center">Volver al menú</button>`;
+  document.getElementById("again").onclick=()=>startGame(G.mode);
+  document.getElementById("menu").onclick=showMenu;
+}
+
+showMenu();
+</script>
+</body>
+</html>
